@@ -12,6 +12,9 @@ jobs:
         with:
           persist-credentials: false
       - name: Scrape and commit
+        env:
+          AISHUB_API_KEY: ${{ secrets.AISHUB_API_KEY }}          
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           pip install -r src/requirements.txt
           python src/vessel_tracker.py
