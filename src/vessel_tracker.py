@@ -4,6 +4,7 @@ import requests
 import json
 import timeago
 from datetime import datetime
+from vessel_types import vessel_types
 
 API_KEY = os.environ.get('AISHUB_API_KEY')
 if not API_KEY:
@@ -75,6 +76,11 @@ if new_or_returning_vessels:
 
     for vessel in new_or_returning_vessels:
         message += f"<https://www.marinetraffic.com/en/ais/details/ships/mmsi:{vessel['MMSI']}|{vessel['MMSI']} - {vessel.get('NAME', '(No name)')}> "
+        type = vessel.get('TYPE', None)
+        
+        if type in vessel_types.keys():
+            message += f"({vessel_types[type]}) "
+
         if vessel['last_seen']:
             message += f"Last seen {timeago.format(datetime.fromisoformat(vessel['last_seen']), current_time)}\n"
         else:
