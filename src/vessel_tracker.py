@@ -1,4 +1,3 @@
-import boto3
 import os
 import time
 import requests
@@ -10,33 +9,31 @@ API_KEY = os.environ.get('AISHUB_API_KEY')
 if not API_KEY:
     raise Exception("No API key found, set AISHUB_API_KEY environment variable")
 
-TABLE_NAME = os.environ['TABLE_NAME']
-if not TABLE_NAME:
-    raise Exception("No table name found, make sure SAM deployment has created TABLE_NAME environment variable")
-
 SLACK_WEBHOOK_URL = os.environ['SLACK_WEBHOOK_URL']
 if not SLACK_WEBHOOK_URL:
     raise Exception("No Slack webhook URL found, set SLACK_WEBHOOK_URL environment variable")
 
 BOUNDING_BOX = (51.425531, -0.382048, 51.529024, 0.039552)
 
+KNOWN_VESSELS_FILE = 'thames-london.json'
+
 TIMEOUT = 60*60*24 # 1 day
 
-# DynamoDB setup
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table(TABLE_NAME)
+try:
+    with open(KNOWN_VESSELS_FILE, 'r') as file:
+        known_vessels = json.load(file)
+except:
+    known_vessels = {}
 
 def get_last_seen(vessel_id):
-    response = table.get_item(Key={'vessel_id': vessel_id})
-    return response['Item']['last_seen'] if 'Item' in response else None
+    return known_vessels.get(vessel_id, None)
 
 def update_last_seen(vessel_id):
     now = datetime.utcnow().isoformat()
-    table.put_item(Item={'vessel_id': vessel_id, 'last_seen': now})
+    known_vessels[vessel_id] = now
 
 def get_vessels_in_area():
     url = f"https://data.aishub.net/ws.php?username={API_KEY}&format=1&output=json&latmin={BOUNDING_BOX[0]}&lonmin={BOUNDING_BOX[1]}&latmax={BOUNDING_BOX[2]}&lonmax={BOUNDING_BOX[3]}"
-    print(url)
     response = requests.get(url)
 
     if response.status_code == 200:
@@ -48,62 +45,57 @@ def get_vessels_in_area():
     else:
         return []
 
-def handler(event, context):
-    current_time = time.time()
+current_time = time.time()
+
+current_vessels = get_vessels_in_area()
+new_or_returning_vessels = []
+
+for vessel in current_vessels:
+    mmsi = str(vessel['MMSI'])
+    last_seen = get_last_seen(mmsi)
     
-    current_vessels = get_vessels_in_area()
-    new_or_returning_vessels = []
+    vessel['last_seen'] = last_seen
 
-    for vessel in current_vessels:
-        mmsi = str(vessel['MMSI'])
-        last_seen = get_last_seen(mmsi)
-        
-        vessel['last_seen'] = last_seen
+    print(f"Vessel {vessel['MMSI']} last seen {vessel['last_seen']}")
 
-        print(f"Vessel {vessel['MMSI']} last seen {vessel['last_seen']}")
+    # If the vessel hasn't been seen before or if it was seen a long time ago
+    if not last_seen or (current_time - time.mktime(datetime.strptime(last_seen, "%Y-%m-%dT%H:%M:%S.%f").timetuple())) > TIMEOUT:
+        new_or_returning_vessels.append(vessel)
 
-        # If the vessel hasn't been seen before or if it was seen a long time ago
-        if not last_seen or (current_time - time.mktime(datetime.strptime(last_seen, "%Y-%m-%dT%H:%M:%S.%f").timetuple())) > TIMEOUT:
-            new_or_returning_vessels.append(vessel)
+    update_last_seen(mmsi)
 
-        update_last_seen(mmsi)
+with open(KNOWN_VESSELS_FILE, 'w') as file:
+    json.dump(known_vessels, file, sort_keys=True, indent=2)
 
-    # temporary slack channel for testing, normal channel is baked in the webhook
-    channel = '#test-vessel-tracker'
+# temporary slack channel for testing, normal channel is baked in the webhook
+channel = '#test-vessel-tracker'
 
-    if new_or_returning_vessels:
-        message = 'New vessels in the area:\n'
+if new_or_returning_vessels:
+    message = 'New vessels in the area:\n'
 
-        for vessel in new_or_returning_vessels:
-            message += f"<https://www.marinetraffic.com/en/ais/details/ships/mmsi:{vessel['MMSI']}|{vessel['MMSI']} - {vessel.get('NAME', '(No name)')}> "
-            if vessel['last_seen']:
-                message += f"Last seen {timeago.format(datetime.fromisoformat(vessel['last_seen']), current_time)}\n"
-            else:
-                message += "Never seen before\n"
+    for vessel in new_or_returning_vessels:
+        message += f"<https://www.marinetraffic.com/en/ais/details/ships/mmsi:{vessel['MMSI']}|{vessel['MMSI']} - {vessel.get('NAME', '(No name)')}> "
+        if vessel['last_seen']:
+            message += f"Last seen {timeago.format(datetime.fromisoformat(vessel['last_seen']), current_time)}\n"
+        else:
+            message += "Never seen before\n"
 
-        # Prepare the payload
-        payload = {
-            'channel': channel,
-            'text': message,
-        }
-
-        # Send a POST request to the webhook URL
-        response = requests.post(
-            SLACK_WEBHOOK_URL,
-            headers={'Content-Type': 'application/json'},
-            data=json.dumps(payload),
-        )
-
-        # Check for errors
-        if response.status_code != 200:
-            raise ValueError(
-                f'Request to slack returned an error {response.status_code}, '
-                f'the response is:\n{response.text}'
-        )
-
-    return {
-        'statusCode': 200,
-        'body': {
-            'new_or_returning_vessels': new_or_returning_vessels
-        }
+    # Prepare the payload
+    payload = {
+        'channel': channel,
+        'text': message,
     }
+
+    # Send a POST request to the webhook URL
+    response = requests.post(
+        SLACK_WEBHOOK_URL,
+        headers={'Content-Type': 'application/json'},
+        data=json.dumps(payload),
+    )
+
+    # Check for errors
+    if response.status_code != 200:
+        raise ValueError(
+            f'Request to slack returned an error {response.status_code}, '
+            f'the response is:\n{response.text}'
+    )

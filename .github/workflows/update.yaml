@@ -1,0 +1,28 @@
+name: Periodically check for new vessels
+on: 
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+jobs:
+  scrape-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - name: Scrape and commit
+        run: |
+          pip install -r src/requirements.txt
+          python src/vessel_tracker.py
+
+          git config --global user.email "bot@infrastructureclub.co.uk"
+          git config --global user.name "Vessel notifier GitHub action"
+
+          git add thames-london.json
+          git commit -m "Automatic update of known vessels"
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
