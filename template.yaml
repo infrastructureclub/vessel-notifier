@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Vessel Tracker Lambda Function using DynamoDB for memory and triggered every hour.
+
+Resources:
+  VesselTrackerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: vessel_tracker.handler
+      Runtime: python3.9
+      Timeout: 10
+      CodeUri: ./src/
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref VesselTrackerTable
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref VesselTrackerTable
+      Events:
+        Timer:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 hour)
+
+  VesselTrackerTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: vessel_id
+        Type: String
+
+Outputs:
+  VesselTrackerFunctionArn:
+    Description: "Vessel Tracker Lambda Function ARN"
+    Value: !GetAtt VesselTrackerFunction.Arn
+  VesselTrackerTableArn:
+    Description: "Vessel Tracker DynamoDB Table ARN"
+    Value: !GetAtt VesselTrackerTable.Arn
