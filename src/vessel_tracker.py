@@ -75,7 +75,7 @@ if new_or_returning_vessels:
     message = 'New vessels in the area:\n'
 
     for vessel in new_or_returning_vessels:
-        message += f"<https://www.marinetraffic.com/en/ais/details/ships/mmsi:{vessel['MMSI']}|{vessel['MMSI']} - {vessel.get('NAME', '(No name)')}> "
+        message += f"<https://www.vesselfinder.com/?mmsi={vessel['MMSI']}|{vessel['MMSI']} - {vessel.get('NAME', '(No name)')}> "
         type = vessel.get('TYPE', None)
         
         if type in vessel_types.keys():
