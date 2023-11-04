@@ -18,7 +18,7 @@ BOUNDING_BOX = (51.425531, -0.382048, 51.529024, 0.039552)
 
 KNOWN_VESSELS_FILE = 'thames-london.json'
 
-TIMEOUT = 60*60*24*8 # 8 days, to avoid vessels that just come out every weekend
+TIMEOUT = 60*60*24*15 # 15 days, to avoid vessels that just come out once every week or two
 
 try:
     with open(KNOWN_VESSELS_FILE, 'r') as file:
