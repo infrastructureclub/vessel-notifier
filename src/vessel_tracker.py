@@ -5,6 +5,7 @@ import json
 import timeago
 from datetime import datetime
 from vessel_types import vessel_types
+from vessel_flags import vessel_flags
 
 API_KEY = os.environ.get('AISHUB_API_KEY')
 if not API_KEY:
@@ -78,6 +79,11 @@ if new_or_returning_vessels:
         message += f"<https://www.vesselfinder.com/?mmsi={vessel['MMSI']}|{vessel['MMSI']} - {vessel.get('NAME', '(No name)')}> "
         type = vessel.get('TYPE', None)
         
+        vessel_mid = int(vessel['MMSI'][:3])
+
+        if vessel_mid in vessel_flags.keys():
+            message += f" {vessel_flags[vessel_mid]} "
+
         if type in vessel_types.keys():
             message += f"({vessel_types[type]}) "
 
