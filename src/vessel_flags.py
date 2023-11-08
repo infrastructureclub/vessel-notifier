@@ -1,6 +1,6 @@
 # Source for MID > Country mapping: https://www.vtexplorer.com/mmsi-mid-codes-en/ 
 
-emoji_flags = {
+vessel_flags = {
     201: "🇦🇱", # Albania
     202: "🇦🇩", # Andorra
     203: "🇦🇹", # Austria
