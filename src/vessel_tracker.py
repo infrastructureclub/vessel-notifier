@@ -79,7 +79,7 @@ if new_or_returning_vessels:
         message += f"<https://www.vesselfinder.com/?mmsi={vessel['MMSI']}|{vessel['MMSI']} - {vessel.get('NAME', '(No name)')}> "
         type = vessel.get('TYPE', None)
         
-        vessel_mid = int(vessel['MMSI'][:3])
+        vessel_mid = int(str(vessel['MMSI'])[:3])
 
         if vessel_mid in vessel_flags.keys():
             message += f" {vessel_flags[vessel_mid]} "
