@@ -87,6 +87,12 @@ if new_or_returning_vessels:
         if type in vessel_types.keys():
             message += f"({vessel_types[type]}) "
 
+        if vessel["IMO"]:
+            messsage += f"(IMO: {vessel['IMO']}) "
+
+        if vessel["DEST"]:
+            messsage += f"(Destination: {vessel['DEST']}) "
+
         if vessel['last_seen']:
             message += f"Last seen {timeago.format(datetime.fromisoformat(vessel['last_seen']), current_time)}\n"
         else:
