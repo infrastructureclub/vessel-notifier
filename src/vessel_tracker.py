@@ -62,6 +62,7 @@ for vessel in current_vessels:
 
     # If the vessel hasn't been seen before or if it was seen a long time ago
     if not last_seen or (current_time - time.mktime(datetime.strptime(last_seen, "%Y-%m-%dT%H:%M:%S.%f").timetuple())) > TIMEOUT:
+        print(f"New or timed out vessel. Full data: {vessel}")
         new_or_returning_vessels.append(vessel)
 
     update_last_seen(mmsi)
