@@ -3,6 +3,7 @@ import time
 import requests
 import json
 import timeago
+import lxml.html
 from datetime import datetime
 from vessel_types import vessel_types
 from vessel_flags import vessel_flags
@@ -57,11 +58,20 @@ for vessel in current_vessels:
     last_seen = get_last_seen(mmsi)
     
     vessel['last_seen'] = last_seen
+    vessel['received_by_stations'] = []
 
     print(f"Vessel {vessel['MMSI']} last seen {vessel['last_seen']}")
 
     # If the vessel hasn't been seen before or if it was seen a long time ago
     if not last_seen or (current_time - time.mktime(datetime.strptime(last_seen, "%Y-%m-%dT%H:%M:%S.%f").timetuple())) > TIMEOUT:
+        try:
+            response = requests.get(f"https://www.aishub.net/vessels?Ship%5Bmmsi%5D={mmsi}")
+            root = lxml.html.document_fromstring(response.content)
+            station_nodes = root.xpath('//td[@data-col-seq="6"]/a[contains(@class, "btn")]')
+            vessel['received_by_stations'] = [int(node.text_content().strip()) for node in station_nodes]
+        except Exception as e:
+            print("Failed to get stations that received vessel, error: ", e)
+
         print(f"New or timed out vessel. Full data: {vessel}")
         new_or_returning_vessels.append(vessel)
 
