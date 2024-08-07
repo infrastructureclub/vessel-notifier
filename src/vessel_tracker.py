@@ -84,7 +84,7 @@ with open(KNOWN_VESSELS_FILE, 'w') as file:
 # channel = '#test-vessel-tracker'
 
 if new_or_returning_vessels:
-    message = 'New vessels in the area:\n'
+    message = ''
 
     for vessel in new_or_returning_vessels:
         message += f"<https://www.vesselfinder.com/?mmsi={vessel['MMSI']}|{vessel['MMSI']} - {vessel.get('NAME', '(No name)')}> "
