@@ -16,7 +16,7 @@ SLACK_WEBHOOK_URL = os.environ['SLACK_WEBHOOK_URL']
 if not SLACK_WEBHOOK_URL:
     raise Exception("No Slack webhook URL found, set SLACK_WEBHOOK_URL environment variable")
 
-BOUNDING_BOX = (51.5308, -0.3843, 51.4235, 0.2610)
+BOUNDING_BOX = (51.4235, -0.3843, 51.5308, 0.2610)
 
 KNOWN_VESSELS_FILE = 'thames-london.json'
 
