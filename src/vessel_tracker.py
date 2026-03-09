@@ -5,6 +5,7 @@ import json
 import timeago
 import lxml.html
 from datetime import datetime
+from dateutil import parser
 from vessel_types import vessel_types
 from vessel_flags import vessel_flags
 
@@ -63,7 +64,7 @@ for vessel in current_vessels:
     print(f"Vessel {vessel['MMSI']} last seen {vessel['last_seen']}")
 
     # If the vessel hasn't been seen before or if it was seen a long time ago
-    if not last_seen or (current_time - time.mktime(datetime.strptime(last_seen, "%Y-%m-%dT%H:%M:%S.%f").timetuple())) > TIMEOUT:
+    if not last_seen or (current_time - parser.parse(last_seen).timestamp()) > TIMEOUT:
         try:
             response = requests.get(f"https://www.aishub.net/vessels?Ship%5Bmmsi%5D={mmsi}")
             root = lxml.html.document_fromstring(response.content)
